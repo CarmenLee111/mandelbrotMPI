@@ -8,24 +8,18 @@
 int size, rank;
 int i, j, k;
 const double threshold = 4.0f;         /* threshold if converges compare w/ modulus**2 */
-const int    npls = 512;                 /* resolution of the image */
+const int    npls = 1024;               /* resolution of the image */
 int maxiter;                           /* max number of iteration */
 
 
 double modulus_sq(double x, double y);
 void complex_sq(double *x, double *y);
 void mandelbrot_set (double *pixels, int npls, int *mset);
-void write_output(int m, int n, int* array, char* filename);
-void print_matrix(int* A, int m, int n);
+void write_output(int n, int* array, char* filename);
 
 int main(int argc, char *argv[]) {
     double xmin, ymin, xmax, ymax;        /* domain for the computation */
-    double dx, dy;                        /* spatial step */
-    int npls_y;                           /* row-major partition, amount of strips */
-    double *pixels;                       /* for storing local complex numbers */
-    int *m;                               /* for storing local mset */
-    int *mset;                            /* for storing mandel set */
-
+    
     if (argc != 7) {
         printf("Usage: ./mandelbrot <xmin> <xmax> <ymin> <ymax> <maxiter> <outputfile>");
         return -1;
@@ -44,46 +38,20 @@ int main(int argc, char *argv[]) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    /* memloc in master for the final mandel set */
-    if (rank==0) {
-        mset = (int *) malloc(npls * npls * sizeof(int));
-    }
-
-    /* local mset for storing results */
-    m = (int *) malloc(npls*npls_y*sizeof(int));
     
-    /* creating local row-major strips, stride=number of processors */
-    dx = (xmax - xmin) / (double)(npls-1);
-    dy = (ymax - ymin) / (double)(npls-1);
-    npls_y = npls/size;
-    pixels = (double *) malloc(npls*npls_y*2 * sizeof(double));
-    for (j=0; j<npls_y; j++) {
-        for (i=0; i<npls; i++) {
-            pixels[j*npls*2+i*2]   = xmin + dx * i;
-            pixels[j*npls*2+i*2+1] = ymin + dy * (j*size+rank); 
+    double dx = (xmax - xmin) / (double)(npls-1);
+    double dy = (ymax - ymin) / (double)(npls-1);
+    // double pixels[npls*npls*2];
+    double *pixels = (double *) malloc(npls*npls*2 * sizeof(double));
+    
+    for (i=0; i<npls; i++) {
+        for (j=0; j<npls; j++) {
+            pixels[i*npls*2+j*2]   = xmin + dx * j;
+            pixels[i*npls*2+j*2+1] = ymin + dy * i; 
         }
     }
 
-    /* computing the mandelbrot set */
-    mandelbrot_set(pixels, npls*npls_y, m);
-
-    /* preparing counts and displs for MPI_Gatherv */
-    int counts[size];
-    int displs[size];
-    for (i=0; i<size; i++) {
-        counts[i] = npls;
-        displs[i] = npls*i;
-    }
-
-    /* gather results strip by strip */
-    for (i=0; i<npls_y; i++) {
-        MPI_Gatherv(&m[i*npls], npls, MPI_INT, 
-                    &mset[i*npls*size], counts, displs, MPI_INT, 0, 
-                    MPI_COMM_WORLD);
-    } 
-
-    // for (i=0; i<npls_y; i++) {
+    // for (i=0; i<npls; i++) {
     //     for (j=0; j<npls; j++) {
     //         printf("(%f, %f) ", pixels[i*npls*2+j*2], pixels[i*npls*2+j*2+1]);
     //     }
@@ -91,24 +59,34 @@ int main(int argc, char *argv[]) {
     // }
     // printf("\n");
 
+    FILE *fp = fopen("domain", "w");
+    for (i=0; i<npls*npls; i++) {
+      fprintf(fp, "(%f, %f) ", pixels[i*2], pixels[i*2+1]);
+      if ((i+1)%npls == 0) fprintf(fp, "\n");
+    }
+    fclose(fp);
 
 
-    // FILE *fp = fopen("domain", "w");
-    // for (i=0; i<npls*npls; i++) {
-    //   fprintf(fp, "(%f, %f) ", pixels[i*2], pixels[i*2+1]);
-    //   if ((i+1)%npls == 0) fprintf(fp, "\n");
-    // }
-    // fclose(fp);
 
-    //print_matrix(m, npls_y, npls);
 
-    write_output(npls_y, npls, mset, outputfile);
+    // int mset[npls*npls];
+    int* mset = (int *) malloc(npls*npls*sizeof(int));
+    mandelbrot_set(pixels, npls*npls, mset);
+
+    // for (i=0; i<npls; i++) {
+    //     for (j=0; j<npls; j++) {
+    //         printf("%d ", mset[i*npls+j]);
+    //     }
+    //     printf("\n");
+    // } 
+
+    write_output(npls, mset, outputfile);
+    // write_output(npls, mset, "outputall");
 
 
 
     free(pixels);
-    free(m);
-    if (rank==0) free(mset);
+    free(mset);
 
     MPI_Finalize();
 
@@ -160,25 +138,15 @@ void mandelbrot_set (double *pixels, int npls, int *mset) {
 
  
 
-void write_output(int m, int n, int* array, char* filename) {
+void write_output(int n, int* array, char* filename) {
   FILE *fp = fopen(filename, "w");
   int i;
-  for (i=0; i<m*n; i++) {
+  for (i=0; i<n*n; i++) {
       fprintf(fp, "%d ", array[i]);
       if ((i+1)%n == 0) fprintf(fp, "\n");
   }
   fclose(fp);
 }
-
-void print_matrix(int* A, int m, int n){
-    int i;
-    for (i=0; i<n*m; i++) {
-        printf("%d ", A[i]);
-        if ((i+1)%n == 0) printf("\n");
-    }
-    printf("\n");
-}
-
 
 
 
