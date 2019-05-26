@@ -8,7 +8,7 @@
 int size, rank;
 int i, j, k;
 const double threshold = 4.0f;         /* threshold if converges compare w/ modulus**2 */
-const int    npls = 512;                 /* resolution of the image */
+const int    npls = 2048;              /* resolution of the image */
 int maxiter;                           /* max number of iteration */
 
 
@@ -38,56 +38,67 @@ int main(int argc, char *argv[]) {
     maxiter = atoi(argv[5]);
     char *outputfile = argv[6];
 
-    printf("xmin, xmax, ymin, ymax: (%f, %f, %f, %f) \n", xmin, xmax, ymin, ymax);
+    // printf("xmin, xmax, ymin, ymax: (%f, %f, %f, %f) \n", xmin, xmax, ymin, ymax);
 
     MPI_Init(&argc, &argv);
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	
+	if (log2((float)size) != (int) log2((float)size)) {
+		if (rank==0) {	
+			printf("Number of processors need to be powers of 2\n");
+			return -1;
+		}
+	}
 
-    // /* memloc in master for the final mandel set */
-    // if (rank==0) {
-    //     mset = (int *) malloc(npls * npls * sizeof(int));
-    // }
+    /* memloc in master for the final mandel set */
+    if (rank==0) {
+        mset = (int *) malloc(npls * npls * sizeof(int));
+    }
 
-    // /* local mset for storing results */
-    // m = (int *) malloc(npls*npls_y*sizeof(int));
-    
-    // /* creating local row-major strips, stride=number of processors */
-    // dx = (xmax - xmin) / (double)(npls-1);
-    // dy = (ymax - ymin) / (double)(npls-1);
-    // npls_y = npls/size;
-    // pixels = (double *) malloc(npls*npls_y*2 * sizeof(double));
-    // for (j=0; j<npls_y; j++) {
-    //     for (i=0; i<npls; i++) {
-    //         pixels[j*npls*2+i*2]   = xmin + dx * i;
-    //         pixels[j*npls*2+i*2+1] = ymin + dy * (j*size+rank); 
-    //     }
-    // }
+    /* creating local row-major strips, stride=number of processors */
+    dx = (xmax - xmin) / (double)(npls-1);
+    dy = (ymax - ymin) / (double)(npls-1);
+    npls_y = npls/size;
+    pixels = (double *) malloc(npls*npls_y*2 * sizeof(double));
+    for (j=0; j<npls_y; j++) {
+        for (i=0; i<npls; i++) {
+            pixels[j*npls*2+i*2]   = xmin + dx * i;
+            pixels[j*npls*2+i*2+1] = ymin + dy * (j*size+rank); 
+        }
+    }
 
-    // /* computing the mandelbrot set */
-    // mandelbrot_set(pixels, npls*npls_y, m);
+	/* local mset for storing results */
+    m = (int *) malloc(npls*npls_y*sizeof(int));
 
-    // /* preparing counts and displs for MPI_Gatherv */
-    // int counts[size];
-    // int displs[size];
-    // for (i=0; i<size; i++) {
-    //     counts[i] = npls;
-    //     displs[i] = npls*i;
-    // }
+    /* computing the mandelbrot set */
+    mandelbrot_set(pixels, npls*npls_y, m);
+	//print_matrix(m, npls_y, npls);
 
-    // /* gather results strip by strip */
-    // for (i=0; i<npls_y; i++) {
-    //     MPI_Gatherv(&m[i*npls], npls, MPI_INT, 
-    //                 &mset[i*npls*size], counts, displs, MPI_INT, 0, 
-    //                 MPI_COMM_WORLD);
-    // } 
+    /* preparing counts and displs for MPI_Gatherv */
+    int counts[size];
+    int displs[size];
+    for (i=0; i<size; i++) {
+        counts[i] = npls;
+        displs[i] = npls*i;
+    }
 
-    // write_output(npls_y, npls, mset, outputfile);
-
-    // free(pixels);
-    // free(m);
-    // if (rank==0) free(mset);
+    /* gather results strip by strip */
+    for (i=0; i<npls_y; i++) {
+        MPI_Gatherv(&m[i*npls], npls, MPI_INT, &mset[i*npls*size], counts, displs, MPI_INT, 0, MPI_COMM_WORLD);
+    }
+	
+	/* write output to file */
+	if (rank==0){
+    	write_output(npls_y, npls, mset, outputfile);
+	//    print_matrix(mset, npls, npls); 
+	}
+	
+	/* free memory allocation */
+    free(pixels);
+    free(m);
+    if (rank==0) free(mset);
 
     MPI_Finalize();
 
@@ -106,7 +117,7 @@ void complex_sq(double *x, double *y){
     *y = tmpy;
 }
 
-void mandelbrot_set (double *pixels, int npls, int *mset) {
+void mandelbrot_set (double *pixels, int npls, int *m) {
     int i;
     for (i=0; i<npls; i++) {
         int iter = 0;
@@ -132,7 +143,7 @@ void mandelbrot_set (double *pixels, int npls, int *mset) {
         // printf("iter: %d\n", iter);
 
         /* set value of this pixel in the mandel_set */
-        mset[i] = (iter==maxiter)? -1: iter;
+        m[i] = (iter==maxiter)? -1: iter;
     }
 
 }
