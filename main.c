@@ -5,8 +5,6 @@
 #include <sys/time.h>
 
 /* gloabl variables */
-int size, rank;
-int i, j, k;
 const double threshold = 4.0f;         /* threshold if converges compare w/ modulus**2 */
 const int    npls = 2048;              /* resolution of the image */
 int maxiter;                           /* max number of iteration */
@@ -19,6 +17,8 @@ void write_output(int m, int n, int* array, char* filename);
 void print_matrix(int* A, int m, int n);
 
 int main(int argc, char *argv[]) {
+    int size, rank;
+    int i, j, k;
     double xmin, ymin, xmax, ymax;        /* domain for the computation */
     double dx, dy;                        /* spatial step */
     int npls_y;                           /* row-major partition, amount of strips */
@@ -145,7 +145,6 @@ void mandelbrot_set (double *pixels, int npls, int *m) {
         /* set value of this pixel in the mandel_set */
         m[i] = (iter==maxiter)? -1: iter;
     }
-
 }
 
  
