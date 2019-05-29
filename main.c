@@ -17,14 +17,15 @@ void write_output(int m, int n, int* array, char* filename);
 void print_matrix(int* A, int m, int n);
 
 int main(int argc, char *argv[]) {
-    int size, rank;
-    int i, j, k;
+	int size, rank;
+	int i, j, k;
     double xmin, ymin, xmax, ymax;        /* domain for the computation */
     double dx, dy;                        /* spatial step */
     int npls_y;                           /* row-major partition, amount of strips */
     double *pixels;                       /* for storing local complex numbers */
     int *m;                               /* for storing local mset */
     int *mset;                            /* for storing mandel set */
+    double starttime, t;
 
     if (argc != 7) {
         printf("Usage: ./mandelbrot <xmin> <xmax> <ymin> <ymax> <maxiter> <outputfile>");
@@ -41,6 +42,8 @@ int main(int argc, char *argv[]) {
     // printf("xmin, xmax, ymin, ymax: (%f, %f, %f, %f) \n", xmin, xmax, ymin, ymax);
 
     MPI_Init(&argc, &argv);
+	starttime = MPI_Wtime();
+	t = starttime;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -75,7 +78,13 @@ int main(int argc, char *argv[]) {
     /* computing the mandelbrot set */
     mandelbrot_set(pixels, npls*npls_y, m);
 	//print_matrix(m, npls_y, npls);
+ 
+    if (rank==0) {
+		printf("Wall time for computing mandelbrot: %lf\n", MPI_Wtime()-t);
+		t = MPI_Wtime();
+	}
 
+	
     /* preparing counts and displs for MPI_Gatherv */
     int counts[size];
     int displs[size];
@@ -89,10 +98,16 @@ int main(int argc, char *argv[]) {
         MPI_Gatherv(&m[i*npls], npls, MPI_INT, &mset[i*npls*size], counts, displs, MPI_INT, 0, MPI_COMM_WORLD);
     }
 	
+    if (rank==0) {
+		printf("Wall time for collecting all results: %lf\n", MPI_Wtime()-t);
+		printf("Wall time for all excluding I/O: %lf\n", MPI_Wtime()-starttime);
+    }
+	
 	/* write output to file */
 	if (rank==0){
-    	write_output(npls_y, npls, mset, outputfile);
-	//    print_matrix(mset, npls, npls); 
+    	write_output(npls, npls, mset, outputfile);
+	    //print_matrix(mset, npls, npls); 
+	    printf("Output printed\n");
 	}
 	
 	/* free memory allocation */
@@ -145,6 +160,7 @@ void mandelbrot_set (double *pixels, int npls, int *m) {
         /* set value of this pixel in the mandel_set */
         m[i] = (iter==maxiter)? -1: iter;
     }
+
 }
 
  
