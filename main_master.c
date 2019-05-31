@@ -14,20 +14,22 @@ int main(int argc, char *argv[]) {
     int WORKTAG=1, DIETAG=2;
     int yi;
 
-    if (argc != 7) {
-        printf("Usage: ./mandelmaster <xmin> <ymin> <width> <resolution> <maxiter> <outputfile>");
-        return -1;
+    if (argc < 6) {
+        if (rank==0) {
+            printf("Usage: ./mandelmaster <xcenter> <ycenter> <radius> <resolution> <maxiter> <outputfile>");
+            return -1;
+        }
     }
 
     /* store the arguments */
-    xmin = atof(argv[1]);
-    ymin = atof(argv[2]);
-    widt = atof(argv[3]);
+    xmin = atof(argv[1]) - atof(argv[3]); 
+    ymin = atof(argv[2]) - atof(argv[3]);
+    radius = atof(argv[3]);
     npls = atof(argv[4]);
     maxiter = atoi(argv[5]);
     char *outputfile = argv[6];
 
-    assert(widt>0);
+    assert(radius>0);
 
     MPI_Status status;                     /* status for infor on the communication */
     MPI_Datatype arrtype;                  /* derived datatype for data transmission */
@@ -43,6 +45,12 @@ int main(int argc, char *argv[]) {
     MPI_Type_commit(&arrtype);
 
     /* restriction on the number of processors */
+    if (size < 2) {
+        if (rank==0) {
+            printf("Must have at least 2 processors\n");
+            return -1;
+        }
+    }
     if (size > npls) {
         if (rank==0) {
             printf("Number of processors exceeds batches of work\n");
@@ -51,8 +59,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* compute the step */
-    dx = widt / (double)(npls-1);
-    dy = widt / (double)(npls-1);
+    dx = 2.0f * radius / (double)(npls-1);
+    dy = 2.0f * radius / (double)(npls-1);
     assert(dx!=0);
     assert(dy!=0);
 
@@ -102,6 +110,7 @@ static inline void master(int* mset, int yi, int npls, int size, int WORKTAG, in
     /* tell slaves to die. You guys are done now. */
     for (int rank=1; rank<size; rank++) {
         MPI_Send(0, 0, MPI_INT, rank, DIETAG, MPI_COMM_WORLD);
+        // printf("Sends save dietage: %d\n", DIETAG);
     }
 
     /* print time and write output */
@@ -129,10 +138,13 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
 
         /* receives msg regarding work from master */
         MPI_Recv(&yi, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        // printf("Status has tag: %d\n", status.MPI_TAG);
 
         /* DIETAG, it's time my friend */
         if (status.MPI_TAG == DIETAG) {
             DIETAG = 0;
+            // printf("Dietag is now: %d", DIETAG);
+            break;
         }
 
         /* the complex number for computation */

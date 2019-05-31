@@ -15,7 +15,7 @@
  *******************************************************************/
 int size, rank;
 int i, j;
-char *outputfile;
+char *outputfile=NULL;
 double starttime, t;
 
 
@@ -32,13 +32,15 @@ double get_wall_seconds();
  *      filename - output file name                                *
  *******************************************************************/
 void write_output(int m, int n, int* array, char* filename) {
-  FILE *fp = fopen(filename, "w");
-  int i;
-  for (i=0; i<m*n; i++) {
-      fprintf(fp, "%d ", array[i]);
-      if ((i+1)%n == 0) fprintf(fp, "\n");
+  if (filename != NULL) {
+    FILE *fp = fopen(filename, "w");
+    int i;
+    for (i=0; i<m*n; i++) {
+        fprintf(fp, "%d ", array[i]);
+        if ((i+1)%n == 0) fprintf(fp, "\n");
+    }
+    fclose(fp);
   }
-  fclose(fp);
 }
 
 

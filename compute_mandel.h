@@ -12,7 +12,7 @@
 const double threshold = 4.0f;       /* threshold if converges compare w/ modulus**2 */
 int          npls;                   /* resolution of the image */
 int          maxiter;                /* max number of iteration */
-double       xmin, ymin, widt;       /* domain for the computation */
+double       xmin, ymin, radius;       /* domain for the computation */
 double       dx, dy, *pixels;
 int          *m, *mset; 
 

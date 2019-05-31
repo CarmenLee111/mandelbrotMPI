@@ -7,19 +7,19 @@
 int main(int argc, char *argv[]) {
     int npls_y;                           /* row-major partition, amount of strips */
 
-    if (argc != 7) {
-        printf("Usage: ./mandelequal <xmin> <ymin> <width> <resolution> <maxiter> <outputfile>");
+    if (argc < 6) {
+        printf("Usage: ./mandelequal <xcenter> <ycenter> <radius> <resolution> <maxiter>");
         return -1;
     }
 
     /* store the arguments */
-    xmin = atof(argv[1]);
-    ymin = atof(argv[2]);
-    widt = atof(argv[3]);
+    xmin = atof(argv[1]) - atof(argv[3]); 
+    ymin = atof(argv[2]) - atof(argv[3]);
+    radius = atof(argv[3]);
     npls = atof(argv[4]);
     maxiter = atoi(argv[5]);
     char *outputfile = argv[6];
-    assert(widt>0);
+    assert(radius>0);
 
 
     MPI_Init(&argc, &argv);                   /* setting up MPI */
@@ -43,8 +43,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* creating local row-major strips, stride=number of processors */
-    dx = widt / (double)(npls-1);
-    dy = widt / (double)(npls-1);
+    dx = 2.0f * radius / (double)(npls-1);
+    dy = 2.0f * radius / (double)(npls-1);
     npls_y = npls/size;
     pixels = (double *) malloc(npls*npls_y*2 * sizeof(double));
     for (j=0; j<npls_y; j++) {

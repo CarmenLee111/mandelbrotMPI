@@ -5,25 +5,25 @@
 
 int main(int argc, char *argv[]) {
     
-    if (argc != 7) {
-        printf("Usage: ./mandelserial <xmin> <ymin> <width> <resolution> <maxiter> <outputfile>");
+    if (argc < 6) {
+        printf("Usage: ./mandelserial <xcenter> <ycenter> <radius> <resolution> <maxiter>");
         return -1;
     }
 
     /* store the arguments */
-    xmin = atof(argv[1]);
-    ymin = atof(argv[2]);
-    widt = atof(argv[3]);
+    xmin = atof(argv[1]) - atof(argv[3]); 
+    ymin = atof(argv[2]) - atof(argv[3]);
+    radius = atof(argv[3]);
     npls = atof(argv[4]);
     maxiter = atoi(argv[5]);
     outputfile = argv[6];
-    assert(widt>0);
+    assert(radius>0);
 
     starttime = get_wall_seconds();
 
     /* compute the step */
-    dx = widt / (double)(npls-1);
-    dy = widt / (double)(npls-1);
+    dx = 2.0f * radius / (double)(npls-1);
+    dy = 2.0f * radius / (double)(npls-1);
 
     /* collection of the complex numbers for the mandelbrot set */
     pixels = (double *) malloc(npls*npls*2 * sizeof(double));
