@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     xmin = atof(argv[1]) - atof(argv[3]); 
     ymin = atof(argv[2]) - atof(argv[3]);
     radius = atof(argv[3]);
-    npls = atof(argv[4]);
+    npls = atoi(argv[4]);
     maxiter = atoi(argv[5]);
     char *outputfile = argv[6];
     assert(radius>0);
@@ -30,9 +30,9 @@ int main(int argc, char *argv[]) {
 	
 
     /* restriction on the number of processors */
-	if (log2((float)size) != (int) log2((float)size)) {
+	if (npls%size !=0) {
 		if (rank==0) {	
-			printf("Number of processors need to be powers of 2\n");
+			printf("Resolution needs to be the multiples of number of processors\n");
 			return -1;
 		}
 	}

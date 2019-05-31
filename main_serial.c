@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     xmin = atof(argv[1]) - atof(argv[3]); 
     ymin = atof(argv[2]) - atof(argv[3]);
     radius = atof(argv[3]);
-    npls = atof(argv[4]);
+    npls = atoi(argv[4]);
     maxiter = atoi(argv[5]);
     outputfile = argv[6];
     assert(radius>0);
