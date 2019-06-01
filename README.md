@@ -42,7 +42,7 @@ python3 plot.py -1.185774 0.3049146 0.0001 outfile
 ```
 The above code will generate the following image:
 
-![image info](./example.png)
+<img src="./example.png" width="480" height="480">
 
 
 
