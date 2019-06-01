@@ -35,6 +35,16 @@ The arguments
 - `maxIter` - maximum number of iterations allowed  
 - `filename` - output file name. Optional. If not given, no outputfile will be printed.
 
+Some example of usage:
+```bash
+mpirun -n 4 mandelmaster -1.185774 0.3049146 0.0001 5000 outfile
+python3 plot.py -1.185774 0.3049146 0.0001 outfile
+```
+The above code will generate the following image:
+
+![image info](./example.png)
+
+
 
 # Plot
 If an output file is created, the script `plot.py` can be used to generage the image with the same name. `cmap` is optional, it can be used to change the colormap.  
