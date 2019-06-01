@@ -13,7 +13,7 @@ def main(argv):
     # data = data[::-1]                 # flip the matrix horizontally
 
     norm = colors.PowerNorm(0.3)
-    plt.imshow(data, cmap=cmap, norm=norm)
+    plt.imshow(data, cmap=cmap, origin='lower')#, norm=norm)
     plt.title("C: (%.3E, %.3E), R: %.1E" % (xcenter, -ycenter, radius))
     plt.axis('off')
     plt.tight_layout()

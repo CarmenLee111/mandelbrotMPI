@@ -1,7 +1,7 @@
-/*******************************************************************
- * This header file contains variables and functions               *
- *          for the computation of the Mandelbrot set              *
- *******************************************************************/
+/*********************************************************************************
+ * This header file contains variables and functions                             *
+ *          for the computation of the Mandelbrot set                            *
+ *********************************************************************************/
 
 
 
