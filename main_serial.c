@@ -6,7 +6,7 @@
 int main(int argc, char *argv[]) {
     
     if (argc < 6) {
-        printf("Usage: ./mandelserial <xcenter> <ycenter> <radius> <resolution> <maxiter>");
+        printf("Usage: ./mandelserial <xcenter> <ycenter> <radius> <resolution> <maxiter>\n");
         return -1;
     }
 

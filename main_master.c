@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 
     if (argc < 6) {
         if (rank==0) {
-            printf("Usage: ./mandelmaster <xcenter> <ycenter> <radius> <resolution> <maxiter> <outputfile>");
+            printf("Usage: ./mandelmaster <xcenter> <ycenter> <radius> <resolution> <maxiter> <outputfile>\n");
             return -1;
         }
     }
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
             return -1;
         }
     }
-    if (size > npls) {
+    if (size-1 > npls) {
         if (rank==0) {
             printf("Number of processors exceeds batches of work\n");
             return -1;

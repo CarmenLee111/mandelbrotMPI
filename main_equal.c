@@ -6,9 +6,11 @@
 
 int main(int argc, char *argv[]) {
     int npls_y;                           /* row-major partition, amount of strips */
+    int collect;                          /* number of times collecting equally from each PE */
+    int pad;                              /* residual */
 
     if (argc < 6) {
-        printf("Usage: ./mandelequal <xcenter> <ycenter> <radius> <resolution> <maxiter>");
+        printf("Usage: ./mandelequal <xcenter> <ycenter> <radius> <resolution> <maxiter>\n");
         return -1;
     }
 
@@ -27,15 +29,15 @@ int main(int argc, char *argv[]) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	
 
     /* restriction on the number of processors */
-	if (npls%size !=0) {
-		if (rank==0) {	
-			printf("Resolution needs to be the multiples of number of processors\n");
-			return -1;
-		}
-	}
+    if (size > npls) {
+        if (rank==0) {
+            printf("Number of processors exceeds batches of work\n");
+            return -1;
+        }
+    }
+	
 
     /* memloc in master for the final mandel set */
     if (rank==0) {
@@ -46,11 +48,23 @@ int main(int argc, char *argv[]) {
     dx = 2.0f * radius / (double)(npls-1);
     dy = 2.0f * radius / (double)(npls-1);
     npls_y = npls/size;
+    pad = npls%size;
+    collect = npls/size;
+    if (rank==size-1) npls_y += pad;    /* the last PE takes the residual */
     pixels = (double *) malloc(npls*npls_y*2 * sizeof(double));
-    for (j=0; j<npls_y; j++) {
+    for (j=0; j<collect; j++) {
         for (i=0; i<npls; i++) {
             pixels[j*npls*2+i*2]   = xmin + dx * (double) i;
             pixels[j*npls*2+i*2+1] = ymin + dy * (double) (j*size+rank); 
+        }
+    }
+    /* account for padding at the last processor */
+    if (pad != 0 && rank==size-1) {
+        for (j=0; j<pad; j++) {
+            for (i=0; i<npls; i++) {
+                pixels[collect*npls*2 + j*npls*2+i*2]   = xmin + dx * (double) i;
+                pixels[collect*npls*2 + j*npls*2+i*2+1] = ymin + dy * (double) j + dy*((double) collect*size);
+            }
         }
     }
 
@@ -59,6 +73,7 @@ int main(int argc, char *argv[]) {
 
     /* computing the mandelbrot set */
     mandelbrot_set(pixels, npls*npls_y, m);
+    // print_matrix(m, npls_y, npls);
 	
     /* preparing counts and displs for MPI_Gatherv */
     int counts[size];
@@ -69,9 +84,19 @@ int main(int argc, char *argv[]) {
     }
 
     /* gather results strip by strip */
-    for (i=0; i<npls_y; i++) {
+    for (i=0; i<collect; i++) {
         MPI_Gatherv(&m[i*npls], npls, MPI_INT, &mset[i*npls*size], counts, displs, MPI_INT, 0, MPI_COMM_WORLD);
     }
+
+    /* account for padding */
+    if (pad != 0) {
+        if (rank == size-1) {
+            MPI_Send(&m[collect * npls], pad*npls, MPI_INT, 0, 11, MPI_COMM_WORLD);
+        } 
+        else if (rank==0) {
+            MPI_Recv(&mset[collect*npls*size], pad*npls, MPI_INT, size-1, 11, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    } 
 	
 	/* write output to file */
 	if (rank==0){
