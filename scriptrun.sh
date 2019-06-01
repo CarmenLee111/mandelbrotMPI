@@ -6,7 +6,7 @@ cmap='hot'
 
 
 #center='-0.7437098 -0.107842'   # horse valley
-center='0.2937117 -0.01973392'   # ass crack
+center='0.2937117 -0.01973392'   # crack
 radius=0.1
 # f1=output1_s 
 f2=output1_e 
