@@ -45,7 +45,7 @@ $ python plot.py <x> <y> <radius> <filename> <cmap>
 # Example
 Example of usage and plot:
 ```bash
-$ mpirun -n 4 mandelmaster -1.185774 0.3049146 0.0001 5000 outfile
+$ mpirun -n 4 mandelmaster -1.185774 0.3049146 0.0001 2048 5000 outfile
 $ python3 plot.py -1.185774 0.3049146 0.0001 outfile hot
 ```
 
