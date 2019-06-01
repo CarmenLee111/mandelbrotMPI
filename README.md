@@ -1,6 +1,6 @@
 
 # Introduction 
-This is a C program to compute the Mandelbrot Set implemented in multiply versions including the serial implementation and two parallellized version using MPI. A small program written in Python is included for plotting. 
+This is a C program to compute the Mandelbrot Set implemented in multiply versions including the serial implementation and two parallellized versions using MPI. A small program written in Python is used for plotting. 
 
 # Compile
 Dependencies: [openmpi](https://www.open-mpi.org/)  
@@ -37,16 +37,16 @@ The arguments
 
 
 # Plot
-If an output file is created, the script `plot.py` can be used to generage the image with the same name. `cmap` is optional, it can be used to change the colormap.  
+The script `plot.py` can use the output file to generage the image with the same name. `cmap` is optional, stands for colormap.  
 ```bash
 $ python plot.py <x> <y> <radius> <filename> <cmap>
 ```
 
 # Example
-Some example of usage:
+Example of usage and plot:
 ```bash
-mpirun -n 4 mandelmaster -1.185774 0.3049146 0.0001 5000 outfile
-python3 plot.py -1.185774 0.3049146 0.0001 outfile hot
+$ mpirun -n 4 mandelmaster -1.185774 0.3049146 0.0001 5000 outfile
+$ python3 plot.py -1.185774 0.3049146 0.0001 outfile hot
 ```
 
 <img src="./example.png" width="480" height="480">
