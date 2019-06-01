@@ -1,5 +1,5 @@
 cc = gcc
-CFLAGS = -O3 -funroll-loops -march=native -ffast-math
+CFLAGS = -O3 -funroll-loops -march=native -ffast-math -std=c99
 LIBS = -lm
 
 BINS = mandelserial mandelequal mandelmaster
