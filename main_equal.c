@@ -1,3 +1,7 @@
+/*********************************************************************************
+ * This file contains the source                                                 *
+ *          for compiling the executable mandelequal                             *
+ *********************************************************************************/
 
 #include <mpi.h>
 #include "compute_mandel.h"

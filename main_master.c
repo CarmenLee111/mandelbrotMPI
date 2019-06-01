@@ -1,3 +1,8 @@
+/*********************************************************************************
+ * This file contains the source                                                 *
+ *          for compiling the executable mandelmaster                            *
+ *********************************************************************************/
+
 
 #include <mpi.h>
 #include "compute_mandel.h"
