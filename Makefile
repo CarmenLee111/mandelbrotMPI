@@ -2,7 +2,7 @@ cc = gcc
 CFLAGS = -O3 -funroll-loops -march=native -ffast-math -std=c99
 LIBS = -lm
 
-BINS = mandelserial mandelequal mandelmaster
+BINS = mandelserial mandelequal mandelmaster mandelmaster2
 
 all: $(BINS)
 
@@ -13,6 +13,9 @@ mandelequal: main_equal.c compute_mandel.h utility.h
 	mpicc $(CFLAGS) -o $@ $< $(LIBS)
 
 mandelmaster: main_master.c compute_mandel.h utility.h
+	mpicc $(CFLAGS) -o $@ $< $(LIBS)
+
+mandelmaster2: main_master2.c compute_mandel.h utility.h
 	mpicc $(CFLAGS) -o $@ $< $(LIBS)
 
 clean:
