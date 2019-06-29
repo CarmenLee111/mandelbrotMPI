@@ -149,6 +149,7 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
         /* receives msg regarding work from master */
         MPI_Recv(&yi, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         // printf("Status has tag: %d\n", status.MPI_TAG);
+        MPI_Request req;
 
         /* DIETAG, it's time my friend */
         if (status.MPI_TAG == DIETAG) {
@@ -168,7 +169,7 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
         mandelbrot_set(pixels, npls, m);
 
         /* send back to master at completion */
-        MPI_Send(m, 1, arrtype, 0, yi, MPI_COMM_WORLD);
+        MPI_Isend(m, 1, arrtype, 0, yi, MPI_COMM_WORLD, &req);
     }
 
     /* free memory */
