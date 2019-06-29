@@ -1,6 +1,6 @@
 /*********************************************************************************
  * This file contains the source                                                 *
- *          for compiling the executable mandelmaster non-blocking               *
+ *          for compiling the executable mandelmaster larger partition           *
  *********************************************************************************/
 
 
@@ -17,7 +17,7 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
 int main(int argc, char *argv[]) {
 
     int WORKTAG=1, DIETAG=2;
-    int yi = 0;
+    int yi;
 
     if (argc < 6) {
         if (rank==0) {
@@ -89,26 +89,38 @@ int main(int argc, char *argv[]) {
 static inline void master(int* mset, int yi, int npls, int size, int WORKTAG, int DIETAG,
                           MPI_Status status, MPI_Datatype arrtype, char* outputfile) {
 
-    MPI_Request req_recv, req_send;
-    int flag;
-    
     /* memloc in master for the final mandel set */
     mset = (int *) malloc(npls * npls * sizeof(int));
 
+    int chunk = npls / (size - 1);         /* step for choosing the yi */
+    int ind = 0;
+
     /* initial work allocation to each processor */
     for (int rank=1; rank<size; rank++) {
+        yi = (rank-1) * chunk; 
         MPI_Send(&yi, 1, MPI_INT, rank, WORKTAG, MPI_COMM_WORLD);
-        yi++;
     }
 
     /* as long as there's work, master checks for completion and assgins work to the same slave*/
-    while (yi<npls) {
-        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        MPI_Irecv(&mset[npls*status.MPI_TAG], 1, arrtype, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &req_recv);
-        MPI_Request_get_status(req_recv, &flag, &status);
-        MPI_Isend(&yi, 1, MPI_INT, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD, &req_send);
+    // while (yi<chunk * (size-1) -1) {
+        for (int i=1; i<chunk; i++){
+            for (int j=0; j<size-1; j++){
+                yi = i + j*chunk;
+                MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                MPI_Recv(&mset[npls*status.MPI_TAG], 1, arrtype, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status);
+                MPI_Send(&yi, 1, MPI_INT, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);
+                // printf("Inside yi: %d\n", yi);
+            }
+        } 
+        printf("yi: %d\n", yi);
+    // }
+
+    while (yi < npls-1){
         yi++;
-        MPI_Wait(&req_send, &status);
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&mset[npls*status.MPI_TAG], 1, arrtype, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status);
+        MPI_Send(&yi, 1, MPI_INT, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);  
+        printf("yi: %d\n", yi);
     }
 
     /* collect the rest of the work done*/
@@ -149,7 +161,6 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
         /* receives msg regarding work from master */
         MPI_Recv(&yi, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         // printf("Status has tag: %d\n", status.MPI_TAG);
-        MPI_Request req;
 
         /* DIETAG, it's time my friend */
         if (status.MPI_TAG == DIETAG) {
@@ -169,7 +180,7 @@ static inline void slave(int DIETAG, int yi, int npls, int *m, double xmin, doub
         mandelbrot_set(pixels, npls, m);
 
         /* send back to master at completion */
-        MPI_Isend(m, 1, arrtype, 0, yi, MPI_COMM_WORLD, &req);
+        MPI_Send(m, 1, arrtype, 0, yi, MPI_COMM_WORLD);
     }
 
     /* free memory */
